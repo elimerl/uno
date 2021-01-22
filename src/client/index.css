@@ -1,0 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+* {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+html,
+body,
+pre,
+code,
+kbd,
+samp,
+button {
+  font-family: "'VT323'";
+}
+
+button {
+  border: 0;
+}
