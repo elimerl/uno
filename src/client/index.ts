@@ -68,134 +68,23 @@ function setup(
         room.onMessage("win", () => {
           confetti();
         });
+        setInterval(() => {
+          if (room.state.hands.has(room.sessionId)) {
+            renderFull(room, resources);
+          } else {
+            clearStage();
+            const text = new PIXI.Text("Waiting for players...", {
+              fontSize: 64,
+              fontFamily: "'VT323'",
+            });
+            text.x = 40;
+            text.y = 40;
+            app.stage.addChild(text);
+          }
+        }, 16);
         room.onStateChange((state) => {
           if (state.hands.has(room.sessionId)) {
-            // render hand
-            const cardSprites = render(
-              resources,
-              state.hands.get(room.sessionId).cards.map(cardIdToAsset)
-            );
-            // our hand
-            const hand = state.hands.get(room.sessionId).cards;
-            cardSprites.forEach((sprite, i) => {
-              const card = hand[i];
-              sprite.interactive = true;
-              sprite.on("mousedown", () => {
-                console.log(card);
-                if (
-                  card.split(" ").pop() === "WILD" ||
-                  card.split(" ").pop() === "WILD_DRAW_FOUR"
-                ) {
-                  console.log(card);
-                  (document.getElementById(
-                    "dialog-color"
-                  ) as HTMLDialogElement).open = true;
-                  const buttons: {
-                    red: HTMLButtonElement;
-                    purple: HTMLButtonElement;
-                    yellow: HTMLButtonElement;
-                    green: HTMLButtonElement;
-                  } = {
-                    //@ts-expect-error
-                    red: document.getElementById("red"),
-                    //@ts-expect-error
-                    green: document.getElementById("green"),
-                    //@ts-expect-error
-                    purple: document.getElementById("purple"),
-                    //@ts-expect-error
-                    yellow: document.getElementById("yellow"),
-                  };
-                  Object.keys(buttons).forEach(
-                    //@ts-expect-error
-                    (color: "red" | "green" | "purple" | "yellow") => {
-                      buttons[color].onclick = () => {
-                        console.log(color);
-                        (document.getElementById(
-                          "dialog-color"
-                        ) as HTMLDialogElement).open = false;
-                        room.send("play", { card, color: color.toUpperCase() });
-                      };
-                    }
-                  );
-                } else room.send("play", { card });
-              });
-            });
-            // other player hands
-            Array.from(room.state.hands.keys())
-              .filter((key) => key !== room.sessionId)
-              .forEach((key, handNum) => {
-                const hand = room.state.hands.get(key);
-                hand.cards.forEach((assetId, i) => {
-                  try {
-                    const sprite = new PIXI.Sprite(
-                      resources["color_back"].texture
-                    );
-                    sprite.scale.set(4, 4);
-
-                    sprite.x = i * (sprite.width / 1.5);
-                    sprite.y =
-                      app.renderer.height - (handNum + 1) * sprite.height;
-                    app.stage.addChild(sprite);
-                  } catch (error) {
-                    throw assetId;
-                  }
-                });
-              });
-
-            for (let i = 0; i < room.state.drawPileCards; i++) {
-              const pileSprite = new PIXI.Sprite(
-                resources["color_back"].texture
-              );
-              pileSprite.scale.set(4, 4);
-
-              pileSprite.x = 16 + app.renderer.width / 2 - i / 4;
-              pileSprite.y = app.renderer.height / 2;
-              pileSprite.interactive = true;
-              pileSprite.on("mousedown", () => {
-                room.send("draw");
-              });
-              app.stage.addChild(pileSprite);
-            }
-
-            if (room.state.discarded) {
-              const discardSprite = new PIXI.Sprite(
-                resources[cardIdToAsset(room.state.discarded)].texture
-              );
-              discardSprite.scale.set(4, 4);
-
-              discardSprite.x = app.renderer.width / 2 - discardSprite.width;
-              discardSprite.y = app.renderer.height / 2;
-
-              app.stage.addChild(discardSprite);
-            }
-            // show who's turn it is
-            const text = new PIXI.Text(
-              room.state.currentPlayer === room.sessionId
-                ? "It IS your turn"
-                : "It is NOT your turn",
-              {
-                fontSize: 64,
-                fontFamily: "'VT323'",
-                fill:
-                  room.state.currentPlayer === room.sessionId ? "green" : "red",
-              }
-            );
-            text.x = app.renderer.width - (text.width + 16);
-            text.y = 32;
-
-            app.stage.addChild(text);
-
-            // show uno button
-            const unoBtn = new PIXI.Sprite(resources["btn_uno"].texture);
-            unoBtn.scale.set(4, 4);
-
-            unoBtn.x = app.renderer.width / 2;
-            unoBtn.y = app.renderer.height / 2 - unoBtn.height;
-            unoBtn.interactive = true;
-            unoBtn.on("mousedown", () => {
-              room.send("uno");
-            });
-            app.stage.addChild(unoBtn);
+            renderFull(room, resources);
           } else {
             clearStage();
             const text = new PIXI.Text("Waiting for players...", {
@@ -210,6 +99,137 @@ function setup(
       }
     )
     .catch((reason) => alert(reason));
+}
+function renderFull(
+  room: Colyseus.Room<{
+    hands: Map<string, { cards: string[] }>;
+    discarded: string;
+    currentPlayer: string;
+    drawPileCards: number;
+  }>,
+  resources: Partial<Record<string, PIXI.LoaderResource>>
+) {
+  const state = room.state;
+  // render hand
+  const cardSprites = render(
+    resources,
+    state.hands.get(room.sessionId).cards.map(cardIdToAsset)
+  );
+  // our hand
+  const hand = state.hands.get(room.sessionId).cards;
+  cardSprites.forEach((sprite, i) => {
+    const card = hand[i];
+    sprite.interactive = true;
+    sprite.on("mousedown", () => {
+      console.log(card);
+      if (
+        card.split(" ").pop() === "WILD" ||
+        card.split(" ").pop() === "WILD_DRAW_FOUR"
+      ) {
+        console.log(card);
+        (document.getElementById(
+          "dialog-color"
+        ) as HTMLDialogElement).open = true;
+        const buttons: {
+          red: HTMLButtonElement;
+          purple: HTMLButtonElement;
+          yellow: HTMLButtonElement;
+          green: HTMLButtonElement;
+        } = {
+          //@ts-expect-error
+          red: document.getElementById("red"),
+          //@ts-expect-error
+          green: document.getElementById("green"),
+          //@ts-expect-error
+          purple: document.getElementById("purple"),
+          //@ts-expect-error
+          yellow: document.getElementById("yellow"),
+        };
+        Object.keys(buttons).forEach(
+          //@ts-expect-error
+          (color: "red" | "green" | "purple" | "yellow") => {
+            buttons[color].onclick = () => {
+              console.log(color);
+              (document.getElementById(
+                "dialog-color"
+              ) as HTMLDialogElement).open = false;
+              room.send("play", { card, color: color.toUpperCase() });
+            };
+          }
+        );
+      } else room.send("play", { card });
+    });
+  });
+  // other player hands
+  Array.from(room.state.hands.keys())
+    .filter((key) => key !== room.sessionId)
+    .forEach((key, handNum) => {
+      const hand = room.state.hands.get(key);
+      hand.cards.forEach((assetId, i) => {
+        try {
+          const sprite = new PIXI.Sprite(resources["color_back"].texture);
+          sprite.scale.set(4, 4);
+
+          sprite.x = i * (sprite.width / 1.5);
+          sprite.y = app.renderer.height - (handNum + 1) * sprite.height;
+          app.stage.addChild(sprite);
+        } catch (error) {
+          throw assetId;
+        }
+      });
+    });
+
+  for (let i = 0; i < room.state.drawPileCards; i++) {
+    const pileSprite = new PIXI.Sprite(resources["color_back"].texture);
+    pileSprite.scale.set(4, 4);
+
+    pileSprite.x = 16 + app.renderer.width / 2 - i / 4;
+    pileSprite.y = app.renderer.height / 2;
+    pileSprite.interactive = true;
+    pileSprite.on("mousedown", () => {
+      room.send("draw");
+    });
+    app.stage.addChild(pileSprite);
+  }
+
+  if (room.state.discarded) {
+    const discardSprite = new PIXI.Sprite(
+      resources[cardIdToAsset(room.state.discarded)].texture
+    );
+    discardSprite.scale.set(4, 4);
+
+    discardSprite.x = app.renderer.width / 2 - discardSprite.width;
+    discardSprite.y = app.renderer.height / 2;
+
+    app.stage.addChild(discardSprite);
+  }
+  // show who's turn it is
+  const text = new PIXI.Text(
+    room.state.currentPlayer === room.sessionId
+      ? "It IS your turn"
+      : "It is NOT your turn",
+    {
+      fontSize: 64,
+      fontFamily: "'VT323'",
+      fill: room.state.currentPlayer === room.sessionId ? "green" : "red",
+    }
+  );
+  text.x = app.renderer.width - (text.width + 16);
+  text.y = 32;
+
+  app.stage.addChild(text);
+
+  // show uno button
+  const unoBtn = new PIXI.Sprite(resources["btn_uno"].texture);
+  unoBtn.scale.set(4, 4);
+
+  unoBtn.x = app.renderer.width / 2;
+  unoBtn.y = app.renderer.height / 2 - unoBtn.height;
+  unoBtn.interactive = true;
+  unoBtn.on("mousedown", () => {
+    room.send("uno");
+  });
+  app.stage.addChild(unoBtn);
 }
 function clearStage() {
   for (var i = app.stage.children.length - 1; i >= 0; i--) {
