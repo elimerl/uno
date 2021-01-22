@@ -90,7 +90,6 @@ export class Game extends Room {
       } catch (error) {
         console.log(error.message);
       }
-      this.engine.pass();
       this.updateState();
     }
   }
