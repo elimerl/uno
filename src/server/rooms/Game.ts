@@ -1,13 +1,7 @@
 import { Room, Client } from "colyseus";
-import { Game as UnoGame } from "uno-engine";
+import { Colors, Game as UnoGame } from "uno-engine";
 import { Player } from "uno-engine/dist/player";
 import { GameState, Hand } from "./schema/GameState";
-const Colors: { [key: string]: number } = {
-  RED: 1,
-  BLUE: 2,
-  GREEN: 3,
-  YELLOW: 4,
-};
 export class Game extends Room {
   state: GameState;
   engine: UnoGame;
@@ -67,7 +61,7 @@ export class Game extends Room {
         .getPlayer(client.sessionId)
         .hand.find((c) => c.toString() === msg.card);
       if (card.color === undefined) {
-        card.color = Colors[msg.color];
+        card.color = (Colors as any)[msg.color.toUpperCase()];
       }
       try {
         this.engine.play(card);
