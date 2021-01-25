@@ -42,15 +42,13 @@ export class Game extends Room {
     if (!this.state.running) {
       return false;
     }
-    if (this.engine.currentPlayer.name === client.sessionId) {
-      try {
-        this.engine.uno();
-        this.state.gameLog.push(`${client.sessionId} SHOUT`);
-      } catch (error) {
-        console.log(error.message);
-      }
-      this.updateState();
+    try {
+      this.engine.uno();
+      this.state.gameLog.push(`${client.sessionId} SHOUT`);
+    } catch (error) {
+      console.log(error.message);
     }
+    this.updateState();
   }
   playerPlay(client: Client, msg: { card: string; color?: string }) {
     if (!this.state.running) {
